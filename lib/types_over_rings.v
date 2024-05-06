@@ -344,6 +344,12 @@ Definition charmrig : UU :=
           ((on x ⨿ on y) -> on (op2 x y))
         × ((on x × on y) -> on (op1 x y)).
   
+Definition strangerig : UU :=
+  ∑ rr : rig,
+      ∑ on : typeon rr,
+        ∏ x y : rr,
+          ((on x ⨿ on y) <- on (op2 x y))
+        × ((on x × on y) <- on (op1 x y)).
 
 Definition typedring : UU :=
   ∑ rr : ring,
@@ -1602,10 +1608,27 @@ Section beautyrigs.
     remember (path lflat) as wflat.
     exact (♯♯ wflat).
   Defined.
-  (* In particular, logical equivalences factor through the ring  *)
+
+  (* In particular, logical equivalences factor through the ring  in the following sense*)
+  (* Note that the usual ring  / type theoretic notions of distributivity do not quite
+   give us such a "combination", but such auto combination may exist for certain α β ℵ
+   in certain beautiful rigs *)
   Definition combine_beautifully
-    (path :
-    
+    (path_to_lower : ϡ (α * β)%ring <- ϡ (ℵ + ℶ)%ring )  
+    (path_to_raise : ϡ α × ϡ β -> ϡ ℵ ⨿ ϡ ℶ)
+    : (ϡ α × ϡ β <-> ϡ ℵ ⨿ ϡ ℶ)
+        × (ϡ (α * β)%ring <-> ϡ (ℵ + ℶ)%ring ).
+    intros. split; split.
+    - exact path_to_raise.
+    - exact (lower_beautifully path_to_lower).
+    - exact (raise_beautifully path_to_raise).
+    - exact path_to_lower.
+  Defined.
+
+End beautyrigs. 
+
+Section charmrig.
+  
     
 
                                
