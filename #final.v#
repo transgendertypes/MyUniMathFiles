@@ -1,0 +1,994 @@
+Require Import Coq.Init.Prelude.
+Require Import UniMath.Foundations.All.
+
+Require Import UniMath.MoreFoundations.Bool.
+Require Import UniMath.MoreFoundations.Subtypes.
+Require Import UniMath.MoreFoundations.Equivalences.
+Require Import UniMath.MoreFoundations.Notations.
+Require Import UniMath.MoreFoundations.NullHomotopies.
+Require Import UniMath.MoreFoundations.Interval.
+Require Import UniMath.Combinatorics.FiniteSequences.
+Require Import UniMath.Combinatorics.FiniteSets.
+Require Import UniMath.Algebra.GroupAction.
+
+Require Import UniMath.SyntheticHomotopyTheory.All.
+
+Section Core.
+  (* Prototypically, the classifier is hProp *) 
+  Context (Classifier : UU).
+
+  (* Prototypically, Points Lines are standard finite sets *) 
+  Context (Points Lines : UU).
+
+  (* Prototypically, Zero = hfalse *)
+  Context (Zero : Classifier).
+(*
+  Definition lieson (incidence : Classifier) : UU
+    := incidence != Zero. 
+*)
+  Context (lieson : Classifier -> UU).
+
+  (* Prototypically, a lineover a set of points is a subset*) 
+  Definition lineover : UU :=
+    Points -> Classifier.
+
+  (* We want our lines be pointed, because it makes things more interesting *)
+  Definition linesover : UU :=
+    ∑ line: lineover,
+    ∑ point: Points, lieson (line point).
+End Core.
+
+Type linesover.
+Type lineover.
+
+Section IncidenceStructures.
+  Context ( Classifier: UU ).
+  Context ( Zero : Classifier ).
+  Context ( Points Lines : UU ).
+  Context ( lieson : Classifier -> UU ).
+  Type linesover.
+  Type lineover.
+
+  Definition IncidenceStructureover : UU :=
+    lineover Classifier (linesover Classifier Points lieson).
+
+
+End IncidenceStructures.
+
+Type IncidenceStructureover.
+Section IncidenceType.
+  (* We often want to treat incidence structures as a type.  Here's how. *)
+  Context {Classifier Points : UU}.
+  Context {Zero : Classifier}.
+  Context {lieson : Classifier -> UU}.
+  Definition pointsof (_: IncidenceStructureover Classifier Points lieson) : UU := Points.
+
+  Definition linesof
+    : IncidenceStructureover Classifier Points lieson -> UU.
+    unfold IncidenceStructureover.
+    unfold lineover.
+    intros.
+    exact (∑ line: linesover Classifier Points lieson,
+              lieson (X line)).
+  Defined.
+
+  Coercion linesof : IncidenceStructureover >-> UU.
+
+  Definition pointson {structure : IncidenceStructureover Classifier Points lieson}
+    : linesof structure -> UU.
+    unfold linesof.
+    intro.
+    induction X.
+    unfold linesover in pr1.
+    induction pr1 as [line [sample incidence]].
+    exact (∑ pp : Points, lieson 
+                            (line pp)).
+  Defined.
+
+  Coercion pointson : linesof >-> UU.
+
+  Definition pencil {structure : IncidenceStructureover Classifier Points lieson} {line: linesof structure}
+    : pointson line ->  linesover Classifier (linesof structure) lieson.  
+    unfold linesover.
+    intro point.
+    unfold lineover.
+    unfold IncidenceStructureover in structure.
+    unfold lineover in structure.
+    unfold linesover in structure.
+    exists (λ X, ((pr11 X) (pr1 point))).
+    exists line.
+    exact (pr2 point). 
+  Defined.
+
+  (*  From an incidence internal to an incidence structure,
+      one can construct a pencil of lines.
+
+      Taking the perspective that "points are types, lines are elements"
+      the pencil is a structure which represents one of the types,
+      up to its elements. *) 
+  Definition pencil_substructure {structure : IncidenceStructureover Classifier Points lieson} {line: linesof structure}
+    : pointson line ->  IncidenceStructureover Classifier Points lieson.  
+    unfold IncidenceStructureover.
+    unfold linesover.
+    intro point.
+    intro.
+    exact ((pr1 X) (pr1 point)).
+  Defined.
+
+      
+
+End IncidenceType.
+
+Section StandardIncidenceStructure.
+
+  Definition lieson : UU -> UU := λ x, x.
+
+  Definition StandardIncidenceStructureover (Points: UU) : UU :=
+    IncidenceStructureover hProp Points (λ x, x).
+
+  Definition IOverNat (n : nat) : UU :=
+    StandardIncidenceStructureover (stn n).
+
+  Definition OneOnOne : IOverNat 1.
+    intro
+.
+    induction X as [line [point incidence]].
+    exact (line point).
+  Defined.
+
+  (* One line through two points *)
+  Definition TwoOnOne : IOverNat 2.
+    intro; induction X as [line [point incidence]].
+    exact ( ishinh ( ∏ pp, lieson (line pp) ) ).
+  Defined
+.
+
+  (* One line through N Points *)
+
+  Definition nOnOne (n : nat) : IOverNat n.
+    intro; induction X as [line [point incidence]].
+    exact ( ishinh (∏ pp, lieson (line pp) ) ).
+  Defined.
+
+  Coercion stn : nat >-> Sortclass.
+
+
+
+  Definition line_thru_all_three
+    : linesover hProp (⟦ 3 ⟧)%stn (λ x, x).
+    unfold linesover.
+    exists (λ _, htrue).
+    exists firstelement.
+    unfold lieson.
+    reflexivity.
+  Defined.
+  
+  Definition one_line_lieson_all_three_points :
+    linesof (nOnOne 3).
+    unfold nOnOne.
+    unfold lieson.
+    exists (line_thru_all_three).
+    intro.
+    intro.
+    apply X.
+    intro.
+    reflexivity.
+Defined.
+
+  Definition a_point_on_the_line_thru_all_three :
+    one_line_lieson_all_three_points.
+  Proof.
+    unfold one_line_lieson_all_three_points.
+    exists firstelement.
+    unfold line_thru_all_three.
+    exact tt.
+  Defined.
+
+  Definition OneToOneIncidence
+    (Classifier : UU)
+    (Zero : Classifier)
+    (Classify : UU -> Classifier)
+    (lieson :  Classifier -> UU)
+    (Points : UU)
+    :
+    IncidenceStructureover Classifier Points lieson.
+    intro; induction X as [line [point incidence]].
+    exact (Classify 
+               (∏ pp,
+                 lieson (line pp)
+                 -> pp = point ) ).
+  Defined.
+
+  (* Truncation as classification of incidence *)
+  Type OneToOneIncidence.
+  Definition OneToOneIncidence_hProp
+    (Points : UU) :
+    IncidenceStructureover hProp Points lieson
+   := OneToOneIncidence hProp hfalse ishinh lieson Points.
+
+Section Polytopes.
+  Context (Classifier : UU).
+  Context (Classify : UU -> Classifier).
+  Context (lieson : Classifier -> UU).
+
+  Context (Points : UU).
+
+  Notation IncidenceStructureover X :=
+    (IncidenceStructureover Classifier X lieson).
+
+  Context (Structure : IncidenceStructureover Points).
+  
+  Definition Incidence2StructureOver : UU.
+    exact (IncidenceStructureover (linesof Structure)).
+  Defined.
+  
+  Definition Incidence3StructureOver (two_structure: Incidence2StructureOver) : UU.
+    exact (IncidenceStructureover (linesof two_structure)).
+  Defined.
+
+  Definition IncidenceStructure : UU :=
+    ∑ PP : UU, IncidenceStructureover PP.
+
+  (* We can view the "type" of incidence 2-structures
+     as an incidence structure over incidence structures *)
+  Definition Incidence2_s : IncidenceStructureover IncidenceStructure.
+    unfold IncidenceStructureover.
+    unfold lineover,linesover.
+    intro.
+    induction X as [line [point incidence]].
+    exact (Classify (
+               ∑ PP : UU,
+                 ∑ structure : IncidenceStructureover PP,
+                   (linesof structure = Points)
+               )).
+  Defined.
+  
+
+  Definition Incidence2 : IncidenceStructure.
+    exists IncidenceStructure.
+    exact Incidence2_s.
+  Defined.
+
+  Definition Incidence3_s : IncidenceStructureover IncidenceStructure.
+    unfold IncidenceStructureover.
+    unfold lineover,linesover.
+    intro.
+    induction X as [line [point incidence]].
+    exact (Classify (
+                 ∑ classifying_line : Incidence2_s,
+                 ∑ incidence_structure : classifying_line,
+                   
+                   (linesof (pr21 incidence_structure)) = Points)
+               ).
+  Defined.
+
+
+  Definition Incidence3 : IncidenceStructure.
+    exists IncidenceStructure.
+    exact Incidence3_s.
+  Defined.
+
+  Definition Incidence_n (n : nat) : IncidenceStructureover IncidenceStructure.
+    induction n.
+    + unfold IncidenceStructureover.
+      unfold lineover.
+      intro.
+      exact (Classify htrue).
+    + unfold IncidenceStructureover.
+         unfold lineover; intros.
+         exact (Classify (
+                 ∑ classifying_line : IHn,
+                 ∑ incidence_structure : classifying_line, 
+                   weq (linesof (pr21 incidence_structure)) Points)
+               ).
+  Defined.
+
+  Context (hit : lieson (Classify unit)).
+  Context (hitting_never_missing: ∏ ts:UU,
+            (ts != empty) -> lieson (Classify ts)).
+    
+End Polytopes.
+Section Polytope_examples.
+  
+  Context (Points : UU).
+  Type Incidence_n.
+
+  Notation Incidence_n:=(Incidence_n UU (λ x, x) (λ x, x) Points).
+  Notation IncidenceStructure:=(IncidenceStructure UU (λ x, x)).
+
+  Definition poly_to_struc {n : nat} : Incidence_n n -> IncidenceStructure.
+    induction n.
+    -
+      intro.
+      exact (pr121 X).
+    - simpl.
+      intro.
+      exact (pr121 X).
+  Defined.
+
+  
+  Definition facets {n : nat} : Incidence_n n -> UU.
+    simpl.
+    - simpl.
+      intro.
+      exact (linesof (pr2 (poly_to_struc X))).
+  Defined.
+
+  Definition polytope : UU := ∑ n : nat,
+        Incidence_n n.
+
+  Definition OneLinePer (Pt: UU) : IncidenceStructure.
+    unfold IncidenceStructure.
+    exists Pt.
+    exact (OneToOneIncidence UU empty (λ x, x) (λ x, x) Pt).
+  Defined.
+
+  Definition isComposable_Left (structure: IncidenceStructure) :
+    IncidenceStructure -> UU.
+    intro.
+    exact (linesof (pr2 X) = (pr1 structure)).
+  Defined.
+
+  Definition isComposable_Right (structure: IncidenceStructure) :
+    IncidenceStructure -> UU.
+    intro.
+    
+exact (linesof (pr2 structure) = pr1 X).
+
+
+
+  Defined.
+
+  Lemma sublemma_001 : OneToOneIncidence UU ∅ (λ x : UU, x) (λ x, x) Points -> Points.
+    intro; exact (pr121 X).
+  Defined.
+
+  (* This intros  really the main idea coming togehter (line point) is an equality path *)
+  Lemma line_thru_just (y: Points) : (∑ (line : lineover UU Points) (point : Points), line point).
+               exists (λ p1, p1 = y).
+               exists y.
+               unfold lieson.
+               exact (idpath y).
+  Defined.
+
+  Lemma linejustthru_exists (point: Points) : ∑ X : linesover UU Points (λ x, x), ∏ pp : Points, pr1 X pp → pp = pr12 X.
+    unfold linesover.
+    exists (line_thru_just point).
+    intro pp.
+    unfold lieson.
+    intro.
+    simpl in X.
+    simpl.
+    exact X.
+  Defined.
+
+  Lemma onelinepercompose_right (structure : IncidenceStructure) : isComposable_Right structure (OneLinePer (linesof (pr2 structure))).
+    simpl.
+    unfold linesof.
+    unfold isComposable_Right.
+    simpl.
+    reflexivity.
+  Defined.
+
+  Lemma onelinepercompose_left (structure : IncidenceStructure) : isComposable_Left (OneLinePer (linesof (pr2 structure))) structure .
+    simpl.
+    unfold linesof.
+    unfold isComposable_Left.
+    simpl.
+    reflexivity.
+  Defined.
+(*
+  Lemma sublemma_002 : ∏ y pp , pr1 (line_thru_just y) pp → pp = pr12 (line_thru_just y).
+    intros.
+    exact X.
+  Defined.
+
+  Lemma sublemma_003 (y: Points) :∑ X : linesover UU Points (λ x,x ), ∏ pp : Points, pr1 X pp → pp = pr12 X.
+    unfold linesover.
+    exists (line_thru_just y).
+    unfold line_thru_just.
+    simpl.
+    intro.
+    unfold lieson.
+    intro.
+    assumption.
+  Defined.
+
+  Lemma sublemma_004 : Points → OneToOneIncidence UU ∅ (λ x : UU, x) (λ x : UU, x) Points.
+    intro point.
+    unfold OneToOneIncidence.
+    exists (line_thru_just point).
+    intro.
+    simpl.
+    intro.
+    assumption.
+  Defined.
+
+  Lemma sublemma_005 : ∏ y : Points, sublemma_001 (sublemma_003 y) = y.
+    intros.
+    reflexivity.
+  Defined.
+
+  Lemma sublemma_006  (x : OneToOneIncidence UU ∅ (λ x : UU, x) (λ x : UU, x) Points) : sublemma_003 (pr121 x) = x.
+    simpl.
+    intros.
+    induction x.
+    induction pr1.
+    induction pr0.
+    simpl.
+    unfold sublemma_003.
+    unfold line_thru_just.
+    unfold lineover in pr1.
+    simpl.
+    refine (total2_paths_b _ _).
+    simpl.
+    unfold transportb.
+    unfold transportf.
+    simpl.
+    unfold constr1.
+    simpl.
+    unfold paths_rect. simpl.
+    Unshelve. Focus 2.
+    simpl.
+    refine (total2_paths_f _ _).
+    ++ simpl.
+       unfold transportf.
+       simpl.
+       unfold constr1.
+       unfold paths_rect.
+       simpl.
+       unfold Preamble.pr1.
+       simpl.
+       Unshelve. Focus 2.
+       simpl.
+       induction pr0 as [point incidence].
+       simpl.
+       apply funextfun.
+       unfold homot.
+       intro.
+       pose proof (pr2 x).
+       simpl in X.
+       unfold lineover in pr1.
+       pose proof (pr1 x).
+       symmetry.
+       apply univalence.
+       unfold weq.
+       exists X.
+       unfold isweq.
+       intros.
+       unfold hfiber.
+       
+       
+       
+        
+    induction x as [line structure].
+    induction line as [line [point incidence]].
+    unfold OneToOneIncidence in structure. 
+    unfold line_thru_just.
+    simpl.
+    apply maponpaths.
+(*
+  Lemma sublemma_006 : ∏ y : OneToOneIncidence UU empty (λ x: UU, x) (λ x: UU, x) Points , sublemma_003 (sublemma_001 y) = y.
+    intros.
+    unfold sublemma_001.
+    unfold sublemma_003.
+    simpl.
+    unfold line_thru_just.
+    induction y.
+    induction pr1 as [line point].
+    simpl.
+    unfold OneToOneIncidence in pr2.
+    induction point as[point incidence].
+    Print .
+      
+    
+    
+    reflexivity.
+  Defined.
+*)
+  Lemma onelinepercompose_left: isComposable_Left (OneLinePer Points) (OneLinePer Points).
+    unfold isComposable_Left.
+    simpl.
+    apply univalence.
+    apply Equivalence_to_weq.
+    unfold Equivalence.
+    -
+      + exists sublemma_001.
+        exists sublemma_003.
+        unfold sublemma_001.
+        unfold isEquivalence.
+        simpl.
+        exists (λ x, idpath _).
+        
+
+
+
+
+        
+        unfold isweq.
+        intro.
+
+
+
+
+        
+        unfold hfiber.
+        unfold OneToOneIncidence.
+        unfold iscontr.
+        exists (sublemma_003 y,, (idpath y)).
+        intros.
+        unfold sublemma_003.
+        induction t.
+        simpl.
+        unfold line_thru_just.
+        unfold linesover in pr1.
+        induction pr1.
+        induction pr1 as [line [point incidence]].
+        pose proof (pr0 y).
+        simpl in pr2.
+        rewrite <- pr2.
+        simpl.
+        refine (total2_paths_f _ _).
+        -- simpl.
+           unfold transportf.
+           unfold constr1.
+           simpl.
+           unfold paths_rect.
+           simpl.
+           Unshelve.
+           Focus 2.
+           simpl.
+        split.
+ *)
+  
+  Definition rightComposites (structure : IncidenceStructure) : UU :=
+    ∑ struc: IncidenceStructure, isComposable_Right structure struc.
+
+  Definition rCompose (structure: IncidenceStructure) (rComposite: rightComposites structure) : IncidenceStructure.
+  Proof.
+    intros.
+    clear Points.
+    unfold IncidenceStructure.
+    induction rComposite as [composite composition].
+    unfold isComposable_Right in composition.
+    induction structure as [Points lower].
+    induction composite as [Edges higher].
+    unfold IncidenceStructureover in lower.
+    unfold lineover in lower.
+    symmetry in composition.
+    simpl in composition.
+    exists (linesof lower).
+    rewrite <- composition.
+    exact higher.
+  Defined.  
+
+  (* We can put a single higher face per edge *)
+  Definition risers (structure : IncidenceStructure) : rightComposites structure.
+  exists (OneLinePer (linesof (pr2 structure))).
+  exact (onelinepercompose_right structure).
+  Defined.
+
+  (* Thus we can "raise" any incidence structure *)
+  Definition raise (structure : IncidenceStructure) : IncidenceStructure.
+   exact ( rCompose structure (risers structure)).
+  Defined.
+
+  Definition two_loop := raise (OneLinePer unit).
+
+  Lemma tt_lemma : ∏ tt1 tt2 : unit, tt1 = tt2.
+    induction tt1,tt2.
+    exact (idpath _).
+  Defined.
+
+  Lemma big_lemma : unit
+      → ∑ X : ∑ (line : lineover UU unit) (point : unit), line point,
+        ∏ pp : unit, pr1 X pp → pp = pr12 X.
+    intros.
+    exists ((λ _, unit),, tt,, tt).
+    intros.
+    simpl.
+    induction pp.
+    exact (idpath tt).
+  Defined.
+  (* I don'trivial think twoloop = oneloop, but for now it isn'trivial cleaar how to prove either way. *)
+  Definition test : two_loop = OneLinePer unit.
+    unfold two_loop.
+    unfold raise.
+    unfold rCompose.
+    simpl.
+    unfold OneLinePer.
+    simpl.
+    unfold OneToOneIncidence.
+    refine (total2_paths2_f _ _).
+    unfold transportf.
+    unfold constr1.
+    simpl.
+    unfold paths_rect; simpl.
+    Unshelve. Focus 2.
+    simpl.
+    symmetry; apply univalence.
+    unfold weq.
+    unfold linesover.
+    exists big_lemma.
+    unfold big_lemma.
+    simpl.
+  Abort.
+  
+
+  Definition leftComposites (structure : IncidenceStructure) : UU :=
+    ∑ struc: IncidenceStructure, isComposable_Left structure struc.
+
+
+
+  
+
+
+
+
+
+
+
+  Definition points : IncidenceStructure -> UU := pr1.
+  Definition lines : IncidenceStructure -> UU.
+    intro. induction X.
+    exact (linesof pr2).
+  Defined.
+    
+    
+  Definition lCompose (structure: IncidenceStructure) (lComposite: leftComposites structure) : IncidenceStructure.
+    clear Points.
+    unfold IncidenceStructure.
+    induction lComposite as [composite composition].
+    unfold isComposable_Left in composition.
+    induction structure as [Edges higher].
+    induction composite as [Points lower].
+    unfold IncidenceStructureover in lower.
+    unfold lineover in lower.
+    symmetry in composition.
+    simpl in composition.
+    exists (linesof lower).
+    rewrite <- composition.
+    exact higher.
+  Defined.
+
+  Definition stilts_lemma (Edges : UU) : (∑ X : linesover UU Edges (λ x : UU, x), ∏ pp : Edges, pr1 X pp → pp = pr12 X) → Edges.
+    intro.
+    induction X.
+    induction pr1.
+    exact (Preamble.pr1 pr0).
+  Defined.
+
+  Lemma line_thru {Edges: UU} (y: Edges) : (∑ (line : lineover UU Edges) (point : Edges), line point).
+               exists (λ p1, p1 = y).
+               exists y.
+               unfold lieson.
+               exact (idpath y).
+  Defined.
+  Definition stilts_sublemma {Edges : UU} (y : Edges): linesover UU Edges (λ x : UU, x).
+    unfold linesover.
+    exact (line_thru y).
+  Defined.
+  Definition stilts_subsub {Edges: UU} (y: Edges) : ∏ pp : Edges, pr1 (stilts_sublemma y) pp → pp = pr12 (stilts_sublemma y).
+    intros.
+    exact X.
+  Defined.
+    
+
+  Definition stilts_lemma2 {Edges : UU} (y : Edges) : hfiber (stilts_lemma Edges) y.
+    clear Points.
+    unfold hfiber.
+    exists (stilts_sublemma y,, stilts_subsub y ).
+    exact (idpath y).
+  Defined.
+
+  Definition stilts (structure : IncidenceStructure) : leftComposites structure.
+    clear Points.
+    induction structure as [Edges rest]. 
+    exists (OneLinePer Edges).
+    unfold isComposable_Left.
+    simpl.
+    unfold OneToOneIncidence.
+    apply univalence.
+    unfold weq.
+    exists (stilts_lemma Edges).
+    unfold isweq.
+    intro.
+    unfold iscontr.
+    exists (stilts_lemma2 y).
+    intro.
+    unfold stilts_lemma2.
+    unfold stilts_sublemma.
+    unfold stilts_subsub.
+    unfold line_thru.
+    unfold stilts_sublemma.
+    induction t.
+    induction pr1.
+    simpl.
+    refine (total2_paths2_f _ _).
+    unfold transportf. simpl.
+    unfold constr1.
+    
+    
+    induction rest as [line [point incidence]].
+  exact (onelinepercompose_right structure).
+  Defined.
+
+
+    
+    Definition forgetFacets {n: nat} : Incidence_n (S n) -> Incidence_n n.
+    intro polyhedron.
+    induction n;
+      remember (poly_to_struc polyhedron) as Poly;
+      induction polyhedron as [face incidence]; 
+      induction face as [face [line incidence']];
+      unfold Incidence_n;
+      simpl;
+      induction line as [lines line]; 
+      split;
+      unfold linesover;
+      unfold IncidenceStructureover in line;
+      simpl.
+    ++ exists face;
+       exists Poly;
+       rewrite HeqPoly;
+       simpl;
+       exact incidence'.
+    ++ unfold lieson;
+       intro; inversion X.
+       exact tt.
+    ++ exists face;
+       exists Poly;
+       rewrite HeqPoly;
+       simpl;
+       exact incidence'.
+    ++ unfold lieson.
+       intro. rewrite <- X.
+       assert (nat_rect
+                        (λ _ : ℕ,
+                         IncidenceStructureover UU ∅ IncidenceStructure)
+                        (λ _ : ∑ (line0 : lineover UU IncidenceStructure)
+                               (point : IncidenceStructure), 
+                               line0 point != ∅, unit)
+                        (λ (_ : ℕ)
+                         (IHn0 : IncidenceStructureover UU ∅
+                                   IncidenceStructure)
+                         (_ : ∑ (line0 : lineover UU IncidenceStructure)
+                              (point : IncidenceStructure), 
+                              line0 point != ∅),
+                         ∑ (classifying_line : IHn0)
+                         (incidence_structure : classifying_line),
+                          pr21 incidence_structure ≃ Points) n) as classifying_line.
+       induction n;
+       simpl;
+       split.
+    + exists face.
+      exists Poly.
+      rewrite HeqPoly.
+      assumption.
+    +  intro; inversion X0; exact tt. 
+    + exists face
+.
+      exists Poly.
+      rewrite HeqPoly.
+      assumption.
+    + rewrite <- X.
+      simpl.
+      intros.
+      unfold lieson, neg. intros.
+      inversion X0.
+      rewrite <- X.
+      
+     
+    
+    split. exact point.
+    exists (pr11 polyhedron).
+    exists (pr11 polyhedron).
+    exact (pr21 polyhedron).
+    exact pr2.
+    simpl in polyhedron.
+
+    unfold Incidence2_s in polyhedron.
+    induction polyhedron.
+    simpl.
+    split. exact pr1.
+    unfold lieson.
+    intro.
+    inversion X.
+    unfold ishinh_UU.
+    intros. exact tt.
+    - unfold Incidence_n. simpl.
+      split.
+      exact (pr1 polyhedron).
+      induction polyhedron.
+      unfold Incidence_n in pr2. simpl in pr2.
+      intro.
+      inversion X.
+      rewrite X.
+      assert ((nat_rect
+                        (λ _ : ℕ,
+                         IncidenceStructureover UU ∅ IncidenceStructure)
+                        (λ _ : linesover UU IncidenceStructure ∅, unit)
+                        (λ (_ : ℕ)
+                         (IHn0 : IncidenceStructureover UU ∅
+                                   IncidenceStructure)
+                         (_ : linesover UU IncidenceStructure ∅),
+                         ∑ (classifying_line : IHn0)
+                         (incidence_structure : classifying_line),
+                          pr21 incidence_structure ≃ Points) n)) as work.
+      simpl.
+      unfold nat_rect.
+      induction n.
+      -- split. induction pr2.
+         ++ rewrite H0.
+            inversion X.
+            simpl.
+            rewrite H0.
+            
+      pose proof (IHn pr1).
+      
+      exact (pr2).
+      unfold lieson.
+      unfold Incidence_n in polyhedron.
+      simpl in polyhedron.
+      induction polyhedron.
+      unfold lieson in pr2.
+      induction pr2.
+      exists .
+      
+      unfold ishinh_UU.
+      intros.
+      apply X0.
+      induction X.
+      simpl in H0,H1.
+      unfold ishinh_UU in H0.
+      pose proof (IHn pr1).
+      exists X.
+      simpl in pr2.
+      exact pr2.
+
+    
+  Definition PowerFaces : Incidence2StructureOver.
+    unfold Incidence2StructureOver.
+    unfold IncidenceStructureover.
+    unfold lineover.
+    intro.
+    exact (Classify htrue).
+  Defined.
+
+  (* The main definition, really *)
+  Definition iPolytope (n : nat) (Pts: UU) : UU.
+    induction n.
+    - exact Pts.
+    - induction n.
+      + exact incidenceStructureOver Pts.
+      + exact (∑ structure: IHn,
+                ∑ structure2: IncidenceStructureover structure,
+                 IncidenceStructureover (linesof (pr2 structure))). 
+  Defined.
+
+  Definition polytope_to_istructure {n:nat}
+    : iPolytope (S n) Points -> ∑ PP, IncidenceStructureover PP.
+    intro.
+    induction n.
+    - exists Points.
+      exact (pr2 X).
+    - exists (iPolytope (S n) Points).
+      exact (pr21 X).
+  Defined.
+
+  Definition poly_to_istructure {n} (poly: iPolytope (S n) Points):= pr2 (polytope_to_istructure poly).
+
+  Definition lower {n} (poly: iPolytope (S n) Points)
+    := pr1 (polytope_to_istructure poly).
+
+  Coercion poly_to_istructure : iPolytope >-> IncidenceStructureover.
+
+  Notation lineover := (lineover Classifier).
+  Notation lieson := (lieson Classifier Zero).
+
+
+
+  Definition iLower {n:nat}
+    (higher: iPolytope (S n) Points)
+    (face : higher)
+    : iPolytope n Points.
+  Proof.
+    induction n.
+    - unfold iPolytope; simpl.
+      exact (idpath Points).
+    - 
+      induction n;
+      induction face;
+      induction pr1 as [line [point incidence]];
+      exact point.
+  Defined.
+
+  Definition infinityPolytope: UU :=
+    ∑ fn : (∏ n: nat, iPolytope n Points),
+        ∏ n : nat, ∑ face : fn (S n),
+
+          iLower (fn (S n)) face = fn n. 
+  
+End Polytopes.
+
+Section PolytopeExamples.
+  Context (Points Classifier : UU).
+  Context (Zero : Classifier).
+  Context (Classify : UU -> Classifier).
+
+  Notation infinityPolytope := (infinityPolytope Classifier Zero).
+  Notation iPolytope := (iPolytope Classifier Zero).
+  Notation IncidenceStructureover := (IncidenceStructureover Classifier Zero).
+
+  (* an empty incidence structure over n points has no lines at all. *)
+  Definition empty_iStructure (PP: UU) : IncidenceStructureover PP.
+    intro; exact Zero.
+  Defined.
+
+  (* a power iStructure has every possible line *)
+  Definition power_iStructure (PP: UU) : IncidenceStructureover PP.
+    intro; exact (Classify htrue).
+  Defined.
+  
+  Definition empty_preinfinityPolytope
+               : ∏ n : nat, iPolytope n Points.
+    intro;induction n.
+    - exact (idpath Points).
+    - induction n.
+      + exists IHn.
+        exact (empty_iStructure Points).
+      + assert (∑ _ : iPolytope (S n) Points = iPolytope (S n) Points,
+                   IncidenceStructureover (iPolytope (S n) Points)).
+        ++ exists (idpath _). 
+        exact (empty_iStructure (linesof(empty_iStructure (iPolytope Points (S n))))).
+  Defined.
+
+        
+ Compute empty_preinfinityPolytope 20.
+ (* Compute empty_preinfinityPolytope witness (5 * 5 * 5 * 5).  *) 
+    
+ (* A true infinity polytope needs the special condition *) 
+  Definition empty_infinityPolytope : infinityPolytope Points.
+    unfold infinityPolytope.
+    exists empty_preinfinityPolytope.
+    intros.
+    unfold iLower.
+    simpl.
+    unfold empty_iStructure.
+    unfold nat_rect.
+    induction n.
+    - unfold linesover.
+      Abort.
+     
+  Definition power_preinfinityPolytope :
+    ∏ n : nat, iPolytope Points n.
+    intro.
+    induction n.
+    - exact (idpath Points).
+    - induction n.
+      + exact (power_iStructure Points).
+      + induction n.
+        -- unfold iPolytope.
+           simpl.
+           exists IHn.
+        pose proof ((power_iStructure (linesof IHn))).
+        exists (power_iStructure (linesof IHn)).
+
+
+  Definition lCompose (lComposite: leftComposites structure) (structure: IncidenceStructure) : IncidenceStructure.
+  Proof.
+    intros.
+    clear Points.
+    unfold IncidenceStructure.
+    induction rComposite as [composite composition].
+    unfold isComposable_Right in composition.
+    induction structure as [Points lower].
+    induction composite as [Edges higher].
+    unfold IncidenceStructureover in lower.
+    unfold lineover in lower.
+    symmetry in composition.
+    simpl in composition.
+    exists (linesof lower).
+    rewrite <- composition.
+    exact higher.
+  Defined.  

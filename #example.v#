@@ -1,0 +1,237 @@
+Require Import Coq.Init.Prelude.
+Require Import UniMath.Foundations.All.
+Require Import UniMath.MoreFoundations.Bool.
+Require Import UniMath.Combinatorics.FiniteSequences.
+Require Import UniMath.Combinatorics.FiniteSets.
+
+Definition count {X: UU} : finstruct X -> nat := pr1.
+(* The type of incidences *)
+Definition Incidences {X Y : UU} (Points: finstruct X) (Lines: finstruct Y) := finstructondirprod Points Lines.
+
+Definition PreIncidenceMatrix {X Y : UU} (Points: finstruct X) (Lines : finstruct Y): UU := Matrix hProp (count Points) (count Lines).
+Definition mPolarize {X Y : UU} {Points: finstruct X} {Lines: finstruct Y}
+  : PreIncidenceMatrix Points Lines -> PreIncidenceMatrix Lines Points
+  := transpose.
+
+Definition PreIncidenceRelation { X Y : UU } (Points: finstruct X) (Lines : finstruct Y)
+  := ∏ line: Y, ∏ point : X, hProp.
+
+(* An incidence structure is  called well-typed if all lines lie on at least one point.
+ For , "lines" are like elements of types, and elements are required to belong to at least one type (the points).*)
+Definition isWellTyped { X Y : UU} {Points: finstruct X} {Lines: finstruct Y} (prerelation: PreIncidenceRelation Points Lines) :=
+  ∏ line : Y, ∑ point : X, prerelation line point.
+
+Definition linesAreUnique { X Y : UU} {Points: finstruct X} {Lines: finstruct Y} (prerelation : PreIncidenceRelation Points Lines) :=
+  ∏ line1: Y, ∏ line2: Y,
+        ∑ point: X,
+          prerelation line1 point × prerelation line2 point -> empty.
+
+Definition isIncidence
+  { X Y : UU}
+  {Points: finstruct X}
+  {Lines: finstruct Y}
+  (prerelation
+    : PreIncidenceRelation Points Lines)
+  := (isWellTyped prerelation) × (linesAreUnique prerelation).
+
+Definition IncidenceRelation
+  {X Y : UU}
+  {Points : finstruct X}
+  {Lines: finstruct Y}
+  := ∃ incidence : PreIncidenceRelation Points Lines, isIncidence incidence.
+
+Definition decidable_properties_of (X: UU) := X -> bool.
+Definition decidably_true_properties_of (X : UU) :=
+  ∑ prop: (decidable_properties_of X), ∑ x : X, prop x = true. 
+
+Definition finite_properties_of
+  {X : UU}
+  (fin : finstruct X)
+  : finstruct (X -> bool).
+  assert (finstruct bool) as bl.
+  - exact finstructonbool.
+  - exact (finstructonfun fin bl).
+Defined.
+
+Definition finite_properties_have_cardinality_pow_2_n
+  {X : UU}
+  (fin : finstruct X)
+  : count (finite_properties_of fin) = natpower 2 (pr1 fin).
+  induction fin; induction pr1.
+  - simpl. reflexivity.
+  - simpl. reflexivity.
+Defined.
+
+(* A major goal is to succesfully show that lines_through has cardinality pow_2_n - 1 *)
+Definition lines_through {X : UU} (Points: finstruct X): finstruct (∑ rel : X->bool, rel ≠ ).
+  unfold finstruct.
+  exists (natpower 2 (pr1 Points) - 1).
+  unfold nelstruct.
+  induction Points as [n proof].
+  induction n.
+  + simpl.
+    admit.
+  + 
+
+Definition rangenat (n : nat) : Vector nat n.
+  unfold Vector.
+  exact pr1.
+Defined.
+
+Definition rangeofnat {X : UU} (fin: finstruct X) : Vector nat (count fin) :=
+  rangenat (count fin).
+
+Definition rangeof {X : UU} (fin: finstruct X) : Vector X (count fin).
+  unfold Vector.
+  exact (pr2 fin).
+Defined.
+
+Definition property_to_nat {X : UU} (Points : finstruct X) (prop : decidable_properties_of X) : nat.
+  unfold decidable_properties_of in prop.
+  induction Points as [n equi].
+  exact (stnsum (λ m : stn n,  if prop ((pr1 equi) m) then natpower 2 m else 0)).
+Defined.
+
+Lemma l000 : property_to_nat finstructonbool (λ b: bool, false) = 0.
+  reflexivity.
+Defined.
+Lemma l001 : property_to_nat finstructonbool (λ b: bool, true) = 3.
+  reflexivity.
+Defined.
+Lemma l002 : property_to_nat finstructonbool (λ b: bool, b) = 2.
+  reflexivity.
+Defined.
+Lemma l003 :  property_to_nat finstructonbool (λ b: bool,  if b then false else true) = 1.
+  reflexivity.
+Defined.
+
+Definition uint (n : nat) := Vector bool n.
+Definition uint_0 : uint 0 := empty_vec.
+
+Definition raise_uint {n} (num: uint n) : uint (S n).
+  unfold uint.
+  exact (append_vec num false).
+Defined.
+
+Definition usucc {len} (N : uint len)
+  : uint len.
+  induction len.
+  - exact uint_0.
+  - simpl.
+    exact (match (N firstelement) with
+    | false => append_vec (tail N) true
+    | true => append_vec (IHlen (tail N)) true end).
+Defined.
+
+Definition uint_to_nat {n} : uint n -> nat.
+  intros.
+  induction n.
+  - exact 0.
+  - unfold uint in X.
+    unfold Vector in X.
+    exact (match (X firstelement) with
+      | true => (1 + (2 * IHn (tail X)))
+      | false => (2 * IHn (tail X))
+      end).
+Defined.
+
+
+
+(* all credit to  https://coq.inria.fr/doc/V8.19.0/stdlib/Coq.Init.Nat.html#log2_iter*)
+Fixpoint log2_iter k p q r :=
+  match k with
+    | O => p
+    | S k' => match r with
+                | O => log2_iter k' (S p) (S q) q
+                | S r' => log2_iter k' p (S q) r'
+              end
+  end.
+
+Definition log2 n :=
+  match n with
+  | 0 => 0
+  | S m => log2_iter m 0 1 0 + 1 end.
+
+Definition log2_floor n :=
+  match n with
+  | 0 => 0
+  | S m => log2_iter m 0 1 0 end.
+
+(* 0 has 0 bits, 1 has 1 bit, 2 and 3 have 2 bits, 4-7 have 3 bits, 8-15 have 4 bits, and so on.
+ *)
+
+Definition transport {n} {m} (path : n = m) (N : uint n):  uint m.
+  rewrite <- path. exact N.
+Defined.
+
+(*
+Definition lraise {n} (N : uint (log2 n)) : uint (log2 (S n)).
+  induction n.
+  - unfold log2.
+    unfold log2_iter.
+    exact (append_vec N false).
+  -   
+*)
+
+Definition bits {n} (N : stn n) : UU := stn (log2 n).
+
+Definition nat_to_uint (n : nat):  uint (log2 n).
+  induction n.
+  + exact uint_0.
+  + 
+    refine (match (log2 (S n) - log2 n) with
+           | 0 =>  usucc (_ IHn)
+            | _ => usucc (_ (raise_uint IHn)) end).
+    ++ assert (log2 n = log2 (S n)).
+       +++ admit.
+       +++ intro. rewrite <- X. exact x.
+    ++ assert (S (log2 n) = log2 (S n)). 
+       +++ admit.
+       +++ intro. rewrite <- X. exact x.
+Admitted.
+
+
+           
+    
+  
+  
+(*Definition bits_0_empty : (bits 0) -> empty.
+  unfold bits.
+  intros.
+  induction X.
+  induction pr2.
+  induction pr1.
+  -  unfold natpower in pr2.
+     exact (negnatlthn0 1 pr2).
+  - exact (negnatlthn0 (natpower 2 (S pr1)) pr2).
+Defined.
+
+Definition bits_0_equals_empty : weq (bits 0) empty.
+  exists bits_0_empty.
+  unfold isweq.
+  intros.
+  contradiction.
+Defined.
+
+Definition empty_equals_bits_0 : weq empty (bits 0).
+  pose proof bits_0_equals_empty.
+  pose proof (idweq empty).
+  exact (weqempty X0 X).
+Defined.
+
+Definition count_bits: ∏ n : nat, ∑  n1 : nat,
+        weq (stn n1) (bits n).
+  intros.
+  induction n.
+  - exists 0.
+    pose proof weqstn0toempty.
+    pose proof bits_0_equals_empty.
+    exact (weqempty X X0).
+  - induction IHn as (pred & eqpred).
+    (* distance is forced to be 1 or 0 *)
+    exists (match (natpower 2 pred - S n) with
+           | 0 => S pred
+       | _ => pred end).
+    exists (λ i, nat_to_uint i). 
+
+*)

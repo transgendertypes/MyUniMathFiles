@@ -1,0 +1,13 @@
+Require Import UniMath.Foundations.All.
+Require Import UniMath.Algebra.All.
+
+Check isofhlevel_HLevel.
+Check setwith2binop.
+Check binop UU.
+
+Definition typewith2binop : UU. 
+
+Definition UUrig : rig.
+  unfold rig.
+  unfold setwith2binop.
+           

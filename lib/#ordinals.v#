@@ -1,0 +1,170 @@
+Require Import UniMath.Foundations.All.
+
+Inductive Ordinal :=
+  ZZ : Ordinal |
+  FF (level : Ordinal) : (Ordinal -> Ordinal).
+
+Coercion FF : Ordinal >-> Funclass.
+
+Axiom OrdinalAxiom0 :
+  ∏ OO : Ordinal,
+      ZZ OO = OO -> ∅.
+
+Axiom OrdinalAxiom1 :
+  ∏ XX YY ZZ : Ordinal,
+      XX ZZ = YY ZZ -> XX = YY.
+
+Axiom OrdinalAxiom2 :
+  ∏ XX YY ZZ : Ordinal,
+      XX YY = XX ZZ ->
+      ∏ ϕ : Ordinal,
+        (ϕ XX) YY = (ϕ XX) ZZ.
+
+  ∏ OO1 OO2 OO3 : Ordinal,
+      (FF OO1) OO2 = (FF OO1) OO3 ->
+      ∏ OO4 : Ordinal,
+        FF (FF OO4 OO1) OO2 = FF (FF OO4 OO1) OO3. 
+
+Definition S0 := FF ZZ.
+Definition One := S0 ZZ.
+Definition Two := S0 One.
+Definition Three := S0 Two.
+Definition S1  := FF One.
+Definition S2  := FF Two.
+Definition S3  := FF Three.
+Definition Omega := S1 ZZ.
+(* Omega also equal S2 ZZ, S3 ZZ, etc *)
+Axiom OrdinalAxiomZZ :
+  ∏ OO : Ordinal,
+      (¬ (OO = ZZ)) -> (FF OO ZZ) = Omega.
+
+Definition Two_Omega := S1 Omega.
+Definition Omega_squared := S2 Omega.
+Definition Omega_squared_plus_omega_plus_one := S0 (S1 (S2 Omega)).
+Definition Omega_cubed := S2 Omega_squared.
+Definition Sω := FF Omega.
+
+Axiom OrdinalAxiom3 :
+  ∏ XX YY : Ordinal,
+  FF (S0 XX) YY = FF (S0 XX) (FF XX YY). 
+Definition S1  := FF One.
+
+
+Definition Order : Ordinal -> Ordinal -> bool.
+  intros x y.
+  induction x.
+  - induction y.
+    + exact false.
+    + exact true.
+  - induction y.
+    + exact false.
+    + 
+
+Inductive Omega :=
+  Zero : Omega |
+  next : Omega -> Omega.
+
+Inductive Omegapoly :=
+  Z : Omegapoly |
+  succ : Omegapoly -> Omegapoly |
+  supr : Omegapoly -> Omegapoly |
+  suprr : Omegapoly -> Omegapoly.
+Definition omegapoly := supr Z.
+
+Definition succ_paths {x y: Omegapoly} : (x = y) -> (succ x = succ y). 
+  intros.
+  rewrite X.
+  apply idpath.
+Defined. 
+
+Axiom supr_axiom :
+  ∏ poly : Omegapoly, supr (succ poly) = supr poly.
+
+Axiom suprr_Z_is_Z : suprr Z = Z.
+Axiom suprr_1_is_ω : suprr (succ Z) = omegapoly.
+Axiom suprr_axiom1 :
+  ∏ poly : Omegapoly, suprr (succ (succ poly)) = suprr (succ poly).
+Axiom suprr_axiom2 :
+  ∏ poly : Omegapoly, suprr (supr poly) = suprr (succ poly).
+
+(* transfinite multiplication *)
+Definition timesomega (n : nat) : Omegapoly.
+  induction n.
+  exact Z.
+  exact (supr IHn).
+Defined.
+
+(* exponentiation *)
+Definition omegatothe (n : nat) : Omegapoly.
+  induction n.
+  (* ω^0 is 1 *)
+  exact (succ Z).
+  induction n.
+  - (* ω^1 is ω*)
+    exact omegapoly.
+  - exact (suprr IHn0). 
+Defined.
+
+Definition ompolyadd (x y : Omegapoly) : Omegapoly.
+  induction x.
+  - exact y.
+  - exact (succ IHx).
+  - (* case where x is the limit of succession *)
+    induction y.
+    + exact (supr x).
+    + exact (succ IHy).
+    + exact (supr IHy).
+    + exact (supr IHx).
+  - (* case where x is the limit of successive limit taking *)
+    induction y.
+    + exact (suprr x).
+    + exact (succ IHy).
+    + exact (supr IHy).
+    + exact (suprr IHy).
+Defined.
+
+
+Compute (ompolyadd (supr omegapoly) (supr omegapoly)).
+Compute (ompolyadd (supr omegapoly) (ompolyadd (succ (succ Z)) (suprr omegapoly))).
+
+Fixpoint ompolyaddcomm (x y : Omegapoly) :
+      ompolyadd x y = ompolyadd y x.
+  intros.
+  simpl.
+  induction x.
+  - simpl.
+    induction y; try apply idpath.
+    + simpl. rewrite <- IHy. apply idpath.
+  - simpl. induction y; try apply idpath.
+    + simpl. simpl in IHx. rewrite IHx. apply idpath.
+    + simpl. simpl in IHx,IHy. rewrite IHx.
+      apply succ_paths.
+       IHy.
+      exact (ompolyaddcomm x y).
+    + rewrite IHx.
+      simpl.
+      apply succ_paths.
+      unfold ompolyadd.
+      simpl.
+      rewrite (ompolyaddcomm y (succ x)).
+      simpl.
+      rewrite (ompolyaddcomm y x).
+      rewrite (supr_axiom _).
+      apply idpath.
+    + simpl. apply succ_paths.
+      rewrite (ompolyaddcomm x (suprr y)).
+      simpl.
+      apply idpath.
+  - simpl .
+    rewrite (ompolyaddcomm y (supr x)).
+    simpl.
+    apply idpath.
+  - simpl.
+    rewrite (ompolyaddcomm y (suprr x)).
+    simpl.
+    apply idpath.
+Defined.
+      
+      
+
+

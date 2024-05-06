@@ -1,0 +1,468 @@
+Require Import Coq.Init.Prelude.
+Require Import UniMath.Foundations.All.
+
+Require Import UniMath.MoreFoundations.Bool.
+Require Import UniMath.MoreFoundations.Subtypes.
+Require Import UniMath.MoreFoundations.Equivalences.
+Require Import UniMath.MoreFoundations.Notations.
+Require Import UniMath.MoreFoundations.NullHomotopies.
+Require Import UniMath.MoreFoundations.Interval.
+Require Import UniMath.Combinatorics.FiniteSequences.
+Require Import UniMath.Combinatorics.FiniteSets.
+Require Import UniMath.Algebra.GroupAction.
+
+Require Import UniMath.SyntheticHomotopyTheory.All.
+
+Section Basics.
+Context (Points Lines : UU).
+
+Definition hetrel :=
+  Points -> Lines -> interval.
+Definition hetrel' :=
+  Lines -> Points -> interval.
+
+Definition polarity : hetrel -> hetrel'.
+  exact (λ lies, λ ll pp, lies pp ll).
+Defined.
+
+Definition all_left : hetrel.
+  exact (λ _ _, left).
+Defined.
+
+Definition all_right : hetrel.
+  exact (λ _ _, right).
+Defined.
+
+Lemma lefts_are_rights : all_right = all_left.
+  apply funextfun.
+  unfold homot.
+  intro.
+  unfold all_right.
+  unfold all_left.
+  rewrite interval_path.
+  reflexivity.
+Defined.
+
+Lemma isEquivalence_polarity : isEquivalence polarity.
+  unfold isEquivalence.
+  simpl.
+  exists (λ hetero', (λ pp ll, hetero' ll pp)).
+  exists idpath.
+  exists idpath.
+  reflexivity.
+Defined.
+  
+Definition polarity_Equivalence:
+  Equivalence hetrel hetrel'.
+  unfold Equivalence.
+  exists polarity.
+  exact isEquivalence_polarity.
+Defined.
+
+Definition exchange: hetrel -> hetrel.
+  unfold hetrel.
+  intros incidence points lines.
+  unfold interval.
+  unfold ishinh.
+  unfold ishinh_UU.
+  pose proof (incidence points lines) as incident.
+  unfold interval in incident.
+  unfold ishinh in incident.
+  unfold ishinh_UU in incident.
+  simpl in incident.
+  unfold make_hProp.
+  simpl.
+  intros.
+  exact (incident P (X ∘ negb)).
+Defined.
+
+Lemma exchange_is_own_inverse :
+  ∏ point: Points,
+      ∏ line: Lines,
+        ∏ incidence: hetrel,
+          ∏ ii : interval,
+          (exchange ∘ exchange) incidence point line interval = incidence point line interval.
+  intros.
+  unfold exchange.
+  unfold interval in ii.
+  unfold ishinh in ii.
+  simpl.
+  unfold funcomp.
+  unfold negb.
+  simpl.
+  apply funextfun; unfold homot.
+  intros ish_UU.
+  unfold ishinh_UU in ish_UU.
+  assert ((λ x : bool, ish_UU (if if x then false else true then false else true)) = ish_UU).
+    + apply funextfun.
+      unfold homot.
+      intro bb.
+      induction bb; reflexivity.
+    + rewrite X.
+      reflexivity.
+Defined.
+
+Lemma exchange_left_is_right : exchange all_left = all_right.
+  reflexivity.
+Defined.
+
+Lemma exchange_right_is_left : exchange all_right = all_left.
+  reflexivity.
+Defined.
+
+End Basics.
+
+Example bool_on_bool_id : hetrel bool bool.
+    unfold hetrel; intros point line.
+    induction point.
+    - induction line. 
+      + exact right.
+      + exact left.
+    - induction line.
+      + exact left.
+      + exact right.
+Defined.
+
+Example bool_on_bool_neg : hetrel bool bool.
+    unfold hetrel; intros point line.
+    induction point.
+    - induction line. 
+      + exact left.
+      + exact right.
+    - induction line.
+      + exact right.
+      + exact left.
+Defined.
+
+Definition booltointerval  : bool -> interval := hinhpr.
+Definition booltointerval' : bool -> interval := hinhpr ∘ negb. 
+
+Lemma interval_symmetry: booltointerval = booltointerval'.
+  apply funextfun.
+  unfold homot.
+  intro bb.
+  induction bb; unfold booltointerval; unfold booltointerval'.
+  - exact interval_path.
+  - symmetry.
+    exact interval_path.
+Defined.
+
+Definition leftfiber : hfiber booltointerval left.
+  exists true.
+  reflexivity.
+Defined.
+
+Definition rightfiber : hfiber booltointerval right.
+  exists false.
+  reflexivity.
+Defined.
+
+Definition pathfiber : hfiber booltointerval right.
+  exists true.
+  exact interval_path.
+Defined.
+
+Definition pathfiberinv : hfiber booltointerval left.
+  exists false.
+  symmetry.
+  exact interval_path.
+Defined.
+
+Definition iscontrinterval (ii : interval) : iscontr interval.
+  exists ii.
+  intros.
+  apply interval.
+Defined.
+
+Example interval_on_interval_first : hetrel interval interval.
+    unfold hetrel.
+    intros.
+    exact X.
+Defined.
+
+Example interval_on_interval_second : hetrel interval interval.
+    unfold hetrel.
+    intros.
+    exact X0.
+Defined.
+
+Example interval_on_interval_first' : hetrel interval interval.
+  unfold hetrel.
+  unfold interval.
+  unfold ishinh.
+  simpl.
+  unfold ishinh_UU.
+  intros.
+  pose proof X P as XP.
+  exact (XP (X1 ∘ negb)).
+Defined.
+
+Example interval_on_interval_second' : hetrel interval interval.
+  unfold hetrel, interval, ishinh, ishinh_UU.
+  simpl;intros.
+  exact ((X0 P) (X1 ∘ negb)).
+Defined.
+
+Lemma firstIsSecond : interval_on_interval_first = interval_on_interval_second.
+  unfold interval_on_interval_first, interval_on_interval_second.
+  repeat (apply funextfun; unfold homot; intro).
+  exact (pr2 (iscontrinterval x0) x).
+Defined.
+
+Lemma firstIsFirst' : interval_on_interval_first = interval_on_interval_first'.
+  unfold interval_on_interval_first, interval_on_interval_first'.
+  repeat (apply funextfun; unfold homot; intro).
+  exact (pr2 (iscontrinterval (λ (P : hProp) (H : bool → P), x P (H ∘ negb))) x).
+Defined.
+
+Lemma secondIsSecond' : interval_on_interval_second = interval_on_interval_second'.
+  unfold interval_on_interval_second, interval_on_interval_second'.
+  repeat (apply funextfun; unfold homot; intro).
+  exact (pr2 (iscontrinterval (λ (P : hProp) (H : bool → P), x0 P (H ∘ negb))) x0).
+Defined.
+
+Lemma firstIsSecond'
+  : interval_on_interval_first = interval_on_interval_second'.
+  rewrite firstIsSecond.
+  rewrite secondIsSecond'.
+  reflexivity.
+Defined.
+
+Lemma secondIsFirst'
+  : interval_on_interval_second = interval_on_interval_first'.
+  rewrite <- firstIsFirst'.
+  rewrite <- firstIsSecond.
+  reflexivity.
+Defined.
+
+Theorem iscontr_hetrelinterval : iscontr (hetrel interval interval).
+  unfold hetrel.
+  unfold interval.
+  unfold ishinh.
+  unfold iscontr.
+  exists interval_on_interval_first.
+  intro structure.
+  repeat (apply funextfun; unfold homot; intro).
+  unfold interval_on_interval_first.
+  exact (pr2 (iscontrinterval x)
+        (structure x x0)).
+Defined.
+
+Definition ttt := left.
+Definition fff := right.
+
+(* n1 < n2 *)
+Definition nat_order_incidence : hetrel nat nat.
+unfold hetrel.
+intros n1 n2.
+pose proof (natlthdec).
+induction X as [lth lthdec].
+induction (lthdec n1 n2).
+- exact ttt.
+- exact fff.
+Defined.
+
+Compute nat_order_incidence 1 5.
+Compute nat_order_incidence 1 1.
+Compute nat_order_incidence 5 1.
+Compute nat_order_incidence 0 1.
+
+(* incidence is  simplified lots by working with decidable relations. *)
+Definition decidable_homo_incidence (Ty : UU) (drel : decrel Ty) : hetrel Ty Ty.
+    unfold hetrel; intros n1 n2.
+    induction drel as [rel isdec].
+    induction (isdec n1 n2).
+    - exact ttt.
+    - exact fff.
+Defined.
+
+Section DecidableIncidence.
+  Context (Points Lines : UU).
+  Context (Incidence : hetrel Points Lines).
+
+  Definition isdechetrel (Incidence: hetrel Points Lines) : UU :=
+    ∏ pp : Points,
+    ∏ ll : Lines,
+      coprod (Incidence pp ll = left) (Incidence pp ll = right).
+
+  Definition dechetrel : UU :=
+    ∑ incidence : hetrel Points Lines, isdechetrel incidence.
+  Definition dechetrel_to_hetrel : dechetrel -> hetrel Points Lines := pr1.
+  Coercion dechetrel_to_hetrel : dechetrel >-> hetrel.
+
+  Definition decrel2 : UU
+  := Points -> Lines -> bool. 
+
+  Definition decrel2_to_hetrel: decrel2 -> hetrel Points Lines.
+    unfold decrel2; intro.
+    unfold hetrel.
+    intros pp ll.
+    exact (booltointerval (X pp ll)).
+  Defined.
+
+  Definition decrel2_to_dechetrel: decrel2 -> dechetrel.
+    intros.
+    unfold decrel2 in X.
+    unfold dechetrel.
+    exists (decrel2_to_hetrel X).
+    unfold decrel2_to_hetrel.
+    unfold isdechetrel.
+    intros.
+    induction (X pp ll).
+    - left. reflexivity.
+    - right. reflexivity.
+  Defined.
+End DecidableIncidence.
+
+Example natorder_decidableincidence : dechetrel nat nat.
+unfold dechetrel.
+exists nat_order_incidence.
+unfold isdechetrel.
+intros n1 n2.
+unfold nat_order_incidence.
+induction (natlthdec n2 n1).
+simpl.
+left.
+unfold coprod_rect; simpl.
+unfold ttt.
+unfold fff.
+induction (isdecrelnatlth n1 n2).
+reflexivity.
+symmetry; exact interval_path.
+Defined.
+
+Definition decidables := isolated UU.
+
+Definition decidable_equality_as_incidence:
+  hetrel decidables UU.
+  unfold hetrel.
+  unfold decidables.
+  unfold isolated.
+  unfold isisolated.
+  intros Points Lines.
+  induction Points.
+  pose proof (pr2 Lines).
+  induction X.
+  - exact ttt.
+  - exact fff.
+Defined.
+  
+Definition Zero := empty.
+Definition One := unit.
+Definition Two := coprod unit unit.
+Definition Three := coprod unit Two.
+Definition Four := coprod unit Three.
+Definition Five := coprod unit Four.
+Definition Six := coprod unit Five.
+Definition Seven := coprod unit Six.
+Definition Eight := coprod unit Seven.
+
+Example lines_intersectpre: decrel2 Two Two.
+unfold decrel2.
+unfold Two.
+intros.
+induction X.
+- induction X0.
+  -- exact true.
+  -- exact false.
+- induction X0.
+  -- exact true.
+  -- exact true.
+Defined.
+
+Example lines_misspre: decrel2 Two Two.
+unfold decrel2.
+unfold Two.
+intros.
+induction X.
+- induction X0.
+  -- exact true.
+  -- exact false.
+- induction X0.
+  -- exact false.
+  -- exact true.
+Defined.
+
+Example lines_intersect  := decrel2_to_dechetrel Two Two
+                              lines_intersectpre.
+Example lines_miss       := decrel2_to_dechetrel Two Two
+                              lines_misspre.
+
+Example missing_is_hitting :
+  dechetrel_to_hetrel Two Two lines_intersect =
+    dechetrel_to_hetrel Two Two lines_miss.
+unfold lines_intersect,lines_miss.
+unfold decrel2_to_dechetrel.
+unfold decrel2_to_hetrel.
+unfold dechetrel.
+apply funextfun.
+unfold booltointerval.
+unfold left,right.
+unfold hinhpr.
+unfold lines_intersectpre.
+unfold lines_misspre.
+simpl.
+unfold coprod_rect.
+unfold bool_rect.
+unfold ishinh_UU.
+apply weqtoforallpaths.
+unfold homot. 
+apply weqtoforallpaths.
+unfold homot;intro.
+apply weqtoforallpaths.
+unfold homot;intro.
+induction x.
+- reflexivity.
+- induction x0.
+  apply weqtoforallpaths; unfold homot; intro.
+  induction x as [PP pr2]. 
+  + unfold isaprop in pr2.
+    unfold isofhlevel in pr2.
+    apply weqtoforallpaths; unfold homot; intro.
+    exact (pr1 (pr2 (x true) (x false))).
+  + reflexivity.
+Defined.
+
+Example missing_is_hitting (point: Two) (line: Two) : (pr1 lines_intersect) point line = (pr1 lines_miss) point line.
+unfold lines_intersect,lines_miss.
+unfold decrel2_to_dechetrel.
+unfold decrel2_to_hetrel.
+unfold booltointerval.
+unfold left,right.
+unfold hinhpr.
+unfold lines_intersectpre.
+unfold lines_misspre.
+simpl.
+unfold coprod_rect.
+unfold bool_rect.
+unfold ishinh_UU.
+apply weqtoforallpaths.
+unfold homot.
+intros.
+apply weqtoforallpaths.
+unfold homot; intro.
+induction x.
+induction (pr2 (x0
+    match point with
+    | inl _ => match line with
+               | inl _ => true
+               | inr _ => false
+               end
+    | inr _ => match line with
+               | inl _ | _ => true
+               end
+    end) ( 
+  x0
+    match point with
+    | inl _ => match line with
+               | inl _ => true
+               | inr _ => false
+               end
+    | inr _ => match line with
+               | inl _ => false
+               | inr _ => true
+               end
+    end
+  )).
+exact pr0.
+Defined.
