@@ -1,0 +1,249 @@
+Require Import UniMath.Foundations.All.
+Require Import UniMath.MoreFoundations.All.
+(* This is the special case.  Might turn out to be the nly case developed. *)
+Definition PP X := X → UU.
+Identity Coercion PPisFunction : PP >-> Funclass.
+
+Definition FF := PP UU.
+Identity Coercion FFisPP : FF >-> PP.
+
+Definition copr : UU → FF := coprod.
+Notation "X +++ Y" := (copr X Y) (at level 30).
+
+Definition coprFF : FF → FF → FF.
+  intros.
+  unfold FF, PP in X, X0.
+  exact (λ x, X x +++ X0 x).
+Defined.
+
+Definition paths {X : UU} : X → (PP X).
+  intros x y.
+  exact (x = y).
+Defined.
+
+Check paths unit.
+Check paths unit unit.
+Check paths (paths unit) (paths unit).
+
+Definition wpaths : UU → FF :=
+  λ x y, x ≃ y.
+
+Example idpathexample : paths (paths unit) (paths unit).
+apply idpath.
+Defined.
+
+Check paths tt tt.
+Fail Check paths tt unit.
+Fail Check paths (paths tt) unit.
+Check paths (paths unit unit) unit.
+
+
+Example whyhard : unit ≃ (unit ≃ unit).
+unfold weq.
+refine (_,, _).
+Unshelve. 2: {
+          intro.
+          refine (_,, _).
+Unshelve. 2: {
+          exact (λ _, tt).
+          }
+          unfold isweq.
+intro.
+unfold iscontr.
+unfold hfiber.
+refine (_,, _).
+Unshelve. 2: {
+          exists tt. induction y. apply idpath.
+        }
+        intro.
+refine (total2_paths2 _ _).
+induction (pr1 t). apply idpath.
+induction t.
+induction X,y,pr1.
+simpl.
+          
+exists (idweq _).
+intro.
+refine (total2_weq _ _).
+simpl.
+Unshelve. 2: {
+          simpl.
+          induction t.
+          simpl.
+
+Example idpathexample2 : wpaths (wpaths unit unit) unit.
+  pose proof (iscontrunit).
+  pose proof (iscontrpathsinunit) as pathsinunit.
+  apply Equivalence_to_weq.
+  exists (λ _, tt).
+  exists (λ _, idweq unit).
+  remember (pr1 iscontrunit).
+  unfold iscontrunit, pr1 in Hequ.
+  refine (_,, _).
+  Unshelve. 2: {
+            intro y. induction y. apply idpath.
+            }
+  refine (_,, _).
+  Unshelve. 2: {
+            intro.
+            refine (total2_paths_f _ _).
+            Unshelve. 2: {
+                      apply funextfun.
+                      intro.
+                      induction x0.
+                      simpl.
+                      induction (pr1 x tt).
+                      apply idpath.
+                    }
+                    simpl.
+            unfold isweq.
+            unfold iscontr, hfiber.
+            simpl.
+            induction x.
+            unfold isweq in pr2.
+            unfold Preamble.pr2.
+            apply funextsec.
+            intro.
+            induction x.
+            simpl.
+            induction (pr2 tt).
+            refine (total2_paths_f _ _).
+            simpl.
+            apply funextsec.
+            intro.
+            induction (pr3 x).
+            induction x.
+            simpl.
+            induction pr0.
+            induction u.
+            clear Hequ.
+            Unshelve. 2: {
+                      simpl.
+                      Check transportf.
+                      unfold Preamble.pr1.
+                      apply pr3.
+       }
+       simpl.
+            unfold Preamble.pr2.
+            unfold transportf.
+            simpl.
+            Check idpath (tt,, pr4).
+            refine (paths _ _).
+
+
+            
+            
+
+
+
+
+
+
+
+
+            
+                      unfold unit_rect.
+                      induction u.
+                      simpl.
+                      clear Hequ.
+                      unfold transportf.
+                      unfold constr1.
+                      unfold paths_rect.
+                      unfold funextfun.
+                      unfold funextfunImplication.
+                      unfold funextsec.
+                      unfold funextsecImplication.
+                      unfold invmap.
+                      unfold hfiberpr1.
+                      unfold Preamble.pr1.
+                      unfold weqccontrhfiber.
+                      unfold iscontrpr1.
+                      unfold weqproperty.
+                      simpl.
+                      remember (λ x0 : unit,
+               match x0 as u return (u = pr1 u) with
+               | tt => match pr1 tt as u return (tt = u) with
+                       | tt => idpath tt
+                       end
+               end).
+                      simpl in Heqp.
+                      unfold isweqtoforallpathsAxiom.
+                      
+                      
+            simpl.
+            unfold isweq in pr3.
+            simpl in pr3. transportf_eq
+            
+  exists (pathsinunit u ).
+
+
+
+
+
+  
+  assert (iscontr (unit ≃ unit)).
+  - unfold iscontr.
+    exists (idweq _).
+    intro.
+    induction t.
+    refine (total2_paths2_f _ _).
+    Unshelve. 2: {
+              apply funextfun.
+              intro. induction x.
+              induction (pr1 tt).
+              apply idpath.
+      } 
+      simpl.
+    unfold transportf.
+    simpl.
+    unfold idisweq.
+    simpl.
+    symmetry.
+    unfold constr1.
+    unfold paths_rect.
+    simpl.
+    unfold funextfun.
+    unfold funextfunImplication, funextsec.
+    unfold unit_rect.
+    simpl.
+    unfold idisweq.
+    simpl.
+    unfold idfun.
+      unfold transportf.
+    simpl.
+    unfold constr1, funextfun.
+    unfold paths_rect.
+    pose proof (pr2 tt).
+    unfold funextfunImplication.
+    unfold unit_rect.
+    simpl.
+    unfold funextsec.
+    unfold funextsecImplication, maponpaths.
+    simpl.
+    unfold make_weq, invmap, toforallpaths.
+    simpl.
+    unfold hfiberpr1.
+    unfold paths_rect.
+    simpl.
+    unfold isweq, idisweq.
+    simpl.
+    unfold make_hfiber, paths_rect.
+    unfold weqccontrhfiber.
+    unfold iscontr.
+    unfold iscontrpr1.
+    unfold weqproperty.
+    simpl.
+    unfold idfun, hfiber.
+    simpl.
+
+
+  
+
+
+Example Plus1 : FF :=
+  λ X, X + unit.
+
+Definition isMonic : PP FF :=
+  λ X, ∏ Y Y' : UU → UU, (X ∘ Y = X ∘ Y') → (Y = Y').
+
+

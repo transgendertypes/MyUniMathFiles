@@ -67,6 +67,8 @@ Section PreBricolage.
   Defined.
    *)
 
+
+
   (* one is  unit = ∅ *)
   Definition one : pathtype := unit.
   Example onepath_will_abort : one.
@@ -226,7 +228,399 @@ Section PreBricolage.
     apply univalence.
     apply weqcoprodcomm.
   Defined.
+
+  Require Import UniMath.Combinatorics.StandardFiniteSets.
+  Coercion stn : nat >-> Sortclass.
+  Example affine1 : UU := 1 -> tension.
+  Example affine (n: nat) : UU := n -> tension. 
+  Definition affine1_to_tension : affine1 -> tension := λ x, x firstelement.
+  Coercion affine1_to_tension : affine1 >-> tension.
+  Definition affine1_to_type (af : affine1) : UU.
+    exact (af firstelement). 
+  Defined.
+  Coercion affine1_to_type : affine1 >-> UU.
+  Definition affine_axis {n: nat} (n' : n)
+                               : affine n -> tension
+    := λ x, x n'.
+
+  (* Notice that these three examples are entirely different types *)
+  Example linear_variety_one_variable_tension (α β : tension) :=
+    ∑ x : tension, ((α ⨱ x) − β).
+  Example linear_variety_one_variable_UU (α β : tension) :=
+    ∑ x : UU, ((α × x) − β).
+  Example linear_variety_one_variable_tension_axis (α β : tension) :=
+    ∑ x : UU, ((α ⨱ x) − β).
+  Example stn_0_2 : 2.
+  exists 0.
+  unfold natlth.
+  unfold natgth.
+  simpl.
+  apply idpath.
+  Defined.
+
+  Definition e0 {n} : S n.
+    exists 0.
+    unfold natlth, natgth; simpl.
+    apply idpath.
+  Defined.
+  Definition e1 {n} : S (S n).
+    exists 1.
+  unfold natlth, natgth; simpl.
+  apply idpath.
+  Defined.
+  Definition e2 {n} : S (S (S n)).
+    exists 2.
+  unfold natlth, natgth; simpl.
+  apply idpath.
+  Defined.
+  Definition e3 {n} : S (S (S (S n))).
+    exists 3.
+  unfold natlth, natgth; simpl.
+  apply idpath.
+  Defined.
+
+  (*  α x = β y *)
+  Example ratio_two_tensions (α β : tension) :=
+    ∑ x : affine 2, ((α ⨱ (x e0)) − (β ⨱ (x e1))).
+  Example ratio_two_types (α β : UU) :=
+    ∑ x y : UU , ((α × x) − (β × y)).
+
+  Example x_twice_y := ratio_two_types 1 2.
+  Example bool_twice_unit : x_twice_y.
+  exists bool. exists unit.
+  assert (bool = 2).
+  - symmetry.
+    apply univalence.
+    exact weqstn2tobool.
+  - rewrite X.
+    assert (unit = 1).
+    + symmetry. apply univalence.
+      exact weqstn1tounit.
+    + rewrite X0.
+      apply univalence.
+      apply weqdirprodcomm.
+  Defined.
+  Lemma unit_equals_1: unit = 1.
+    symmetry.
+    apply univalence.
+    exact weqstn1tounit.
+  Defined.
+  Lemma one_times_x_equals_x (x : UU) : (1 × x) = x.
+    rewrite <- unit_equals_1.
+    apply univalence.
+    exists pr2.
+    unfold isweq, iscontr, hfiber.
+    intros.
+    exists ((tt,,y),, (idpath y)).
+    intros.
+    induction t.
+    induction pr1.
+    induction pr1.
+    simpl in pr2.
+    rewrite pr2.
+    apply idpath.
+  Defined.
     
+  Example nat_twice_nat : x_twice_y.
+  exists nat.
+  exists nat.
+  apply univalence.
+  simpl.
+  rewrite one_times_x_equals_x.
+  (* exists (λ n, natdivrem n 2). *)
+  (* skipping the proof, since this is just an illustrative example *)
+  Admitted.
+
+  Section SubUniverse.
+    (* For  us, a universe isa "subuniverse" of UU,
+     and we are interested in proof-relevant notions
+     of sub-universe, so that it is not necessarily a mere proposition
+     whether such and such auto type belongs to a universe.*)
+    Definition Universe := UU -> UU.
+    Definition isCoprodUniverse (uu : Universe) : UU :=
+      ∏ x y : UU, uu x -> uu y -> uu (x ⨿ y).
+    Definition isDirprodUniverse (uu : Universe) : UU :=
+      ∏ x y : UU, uu x -> uu y -> uu (x × y).
+    Definition isProdIdealUniverse (uu : Universe)
+      : UU := ∏ x y : UU, uu x -> y -> uu (x × y).
+    Definition ishPropertiedUniverse (uu : Universe) : UU :=
+      ∏ x: UU, uu x -> uu (x -> hProp).
+    Definition isLevelPropertiedUniverse (uu : Universe) (n : nat) : UU :=
+      ∏ x: UU, uu x -> uu (x -> HLevel n).
+    Definition hasIncidencehStructures (uu : Universe) : UU :=
+      ∏ x y : UU, uu x -> uu y -> uu (x -> y -> hProp).
+    Definition hasIncidenceStructures (uu : Universe) : UU :=
+      ∏ x y : UU, uu x -> uu y -> uu (x -> y -> UU).
+    Definition isFunctionUniverse (uu : Universe) : UU :=
+      ∏ x y : UU, uu x -> uu y -> uu (x -> y).
+    Definition isPathtypeUniverse0 (uu : Universe) : UU :=
+      ∏ x y : UU, uu x -> uu y -> uu (x = y).
+    Definition isPathtypeUniverse1 (uu : Universe) : UU :=
+      ∏ x : UU, uu x -> ∏ xx xx' : x, uu (xx = xx').
+    Definition isSigmaUniverse (uu : Universe) : UU :=
+      ∏ x : UU, uu x -> 
+                  ∏ ff : x -> UU,
+            (∏ xx : x, uu (ff xx)) -> uu (∑ xx : x, ff xx).
+    Definition isPiUniverse (uu : Universe) : UU :=
+      ∏ x : UU, uu x -> 
+                  ∏ ff : x -> UU,
+            (∏ xx : x, uu (ff xx)) -> uu (∏ xx : x, ff xx).
+
+    (* See also SpecUU below *)
+    Definition isPrimeUniverse (uu : Universe) : UU :=
+      ∏ x y : UU, uu (x × y) -> (uu x) ⨿ (uu y).
+
+    Definition isNotNotPrimeUniverse (uu : Universe) : UU :=
+      ∏ x y : UU, uu (x × y) -> (((uu x) ⨿ (uu y)) -> ∅) -> ∅.
+
+    Definition hasUniverse_empty (uu : Universe) : UU :=
+      uu empty.
+    Definition hasUniverse_unit (uu : Universe) : UU :=
+      uu unit.
+    Require Import UniMath.SyntheticHomotopyTheory.Circle.
+    Definition hasUniverse_circle (uu : Universe) : UU :=
+      uu (pr1 circle).
+    Definition hasUniverse_naturalnumbers (uu : Universe)
+      : UU :=
+      uu nat. 
+
+    Definition IdealUniverse : UU :=
+      ∑ uu : Universe,
+      isCoprodUniverse uu
+    × isProdIdealUniverse uu.
+
+    Definition ProperIdealUniverse : UU :=
+      ∑ uu : Universe,
+      isCoprodUniverse uu
+    × isProdIdealUniverse uu
+    × ∑ X : UU, uu X -> ∅.
+
+    (* bear with me, it will get more formal *)
+    Definition SpecUU : UU :=
+      ∑ uu : Universe,
+          isCoprodUniverse uu
+        × isProdIdealUniverse uu
+        × isPrimeUniverse uu
+
+        × ∑ X : UU, uu X -> ∅.
+    Definition NotNotSpecUU : UU :=
+      ∑ uu : Universe,
+          isCoprodUniverse uu
+        × isProdIdealUniverse uu
+        × isNotNotPrimeUniverse uu
+        × ∑ X : UU, uu X -> ∅.
+
+    Example zeroIdeal : SpecUU.
+      exists (λ x, x -> ∅).
+      split; try split.
+    - unfold isCoprodUniverse.
+      intros x y x0 y0.
+      intro cop.
+      induction cop.
+      exact (x0 a).
+      exact (y0 b).
+    - unfold isProdIdealUniverse.
+      intros.
+      apply X.
+      exact (pr1 X1).
+    - split.
+      + unfold isPrimeUniverse.
+        intros.
+        Abort.
+    (* this version of de morgan's law is unprovable. *)
+    Example zeroIdeal : NotNotSpecUU.
+      exists (λ x, x -> ∅).
+      split; try split.
+    - unfold isCoprodUniverse.
+      intros x y x0 y0.
+      intro cop.
+      induction cop.
+      exact (x0 a).
+      exact (y0 b).
+    - unfold isProdIdealUniverse.
+      intros.
+      apply X.
+      exact (pr1 X1).
+    - split.
+      + unfold isNotNotPrimeUniverse.
+        intros.
+        apply X0.
+        left.
+        intro.
+        apply X0.
+        right.
+        intro.
+        apply X.
+        split; assumption.
+      + exists unit.
+        intros.
+        apply X; exact tt.
+    Defined.
+
+    Example hSetideal : SpecUU.
+    exists (λ x, isaset x).
+    split; try split.
+    - unfold isCoprodUniverse.
+      intros x y x0 y0.
+      exact (isasetcoprod x y x0 y0).
+    - unfold isProdIdealUniverse.
+      intros x y x0.
+    Abort. (* this is  clearly false *)
+
+    (* The idea is  that the product of any x y of HLevel n is of
+     hlevel n.  It follows that the hlevels are multiplicatively closed
+     subuniverses.  What ought to follow is some version of the statement
+     that "the subuniverse of types *not* of some hlevel is a "prime ideal"
+     There are more prime ideals; for example, the collection of types which
+     are *not* a set of cardinality less than some infinite cardinal λ is a "prime ideal" since the
+      product of any such sets is such a set of cardinality greater than or equal to λ
+      or is not a set .
+      Though enumerating these ideals is elementary for sets, the case of
+      groupoids is already interesting.  Essentially, we have a Zariski topology
+which degenerates to the order topology on the infinite cardinals (viewed as a privileged copy of the ordinal numbers) but which partially orders the groupoids (in the sense that any topology gives way to a partial order).  The homotopy levels give another copy of the ordinal numbers as a very coarse topology "over" the entire zariski structure.  
+     *) 
+    (* The prime ideal of inhabited types *)
+    Example nonemptyIdeal : SpecUU.
+    exists (λ x, x).
+    split; try split.
+    - unfold isCoprodUniverse.
+      intros x y xx yy.
+      left; exact xx.
+    - unfold isProdIdealUniverse.
+      intros x y xx yy.
+      exact (xx,, yy).
+    - split.
+      + unfold isPrimeUniverse.
+        intros x y xy.
+        left. exact (pr1 xy).
+      + exists ∅.
+        exact fromempty.
+    Defined.
+
+    (* the "not not prime" ideal of types which are not hProps *)
+    Example hPropideal : NotNotSpecUU.
+    exists (λ x, ∑ xx xx' : x, xx = xx' -> ∅).
+    split; try split.
+    - unfold isCoprodUniverse.
+      intros x y x0 y0.
+      induction x0 as [xx [xx' restx]].
+      induction y0 as [yy [yy' resty]].
+      exists (inl xx).
+      exists (inl xx').
+      intro X.
+      pose proof (ii1_injectivity (Q:=y) xx xx' X).
+      exact (restx X0).
+    - unfold isProdIdealUniverse.
+      intros x y X yy.
+      induction X as[xx [xx' restx]].
+      exists (xx,,yy). exists (xx',,yy).
+      intros.
+      apply base_paths in X.
+      simpl in X.
+      exact (restx X).
+    - split.
+      + unfold isNotNotPrimeUniverse.
+        intros x y [xy [xy' rest]].
+        induction xy as [xx yy].
+        induction xy' as [xx' yy'].
+        intros.
+        apply X.
+        left.
+        exists (xx). exists (xx').
+        intro xpath.
+        apply X.
+        right.
+        exists (yy). exists (yy').
+        intro ypath.
+        apply rest.
+        rewrite xpath. rewrite ypath.
+        apply idpath.
+      + exists unit.
+        intros.
+        induction X.
+        induction pr2.
+        induction pr1,pr0.
+        apply pr2, idpath.
+    Defined.
+
+    Definition weaken_SpecUU : SpecUU -> NotNotSpecUU.
+      intros.
+      induction X.
+      exists pr1.
+      induction pr2.
+      induction pr2.
+      induction pr3.
+      split; try split; try assumption.
+      split; try assumption.
+      unfold isNotNotPrimeUniverse.
+      intros.
+      unfold isPrimeUniverse in pr3.
+      pose proof (pr3 x y).
+      pose proof (X1 X).
+      exact (X0 X2).
+    Defined.
+    Coercion weaken_SpecUU : SpecUU >-> NotNotSpecUU.
+
+    Example nonunital_ideal : NotNotSpecUU.
+    exists (λ x, (iscontr x) -> ∅).
+    split; try split.
+    - unfold isCoprodUniverse, iscontr.
+      intros x y x0 y0 xy.
+      induction xy as [cntr proof].
+      induction cntr.
+      + apply x0.
+        exists a.
+        intro witness.
+        pose proof (proof (inl witness)).
+        exact (ii1_injectivity (Q:=y) witness a X).
+      + apply y0.
+        exists b.
+        intro witness.
+        pose proof (proof (inr witness)).
+        exact (ii2_injectivity (P:=x) witness b X).
+    - unfold isProdIdealUniverse.
+      intros.
+    Abort. (* This condition fails because x may be taken empty *) 
+    (* So, HLevel 0 is not a zariski open set. *)
+
+    Require Import UniMath.Combinatorics.FiniteSets.
+    Lemma isfinite_coprod_inverseproblem { X Y }
+      : isfinite (X ⨿ Y) -> isfinite X.
+      unfold isfinite, ishinh, ishinh_UU, make_hProp.
+      simpl.
+      intros.
+      pose proof X0 P.
+      clear X0.
+      apply X2.
+      intro.
+      apply X1.
+      clear X1. clear X2. clear P.
+      rename X0 into premise.
+      unfold finstruct in premise.
+      induction premise as[n struct].
+      unfold nelstruct in struct.
+      unfold finstruct.
+    Abort. 
+    Example transfinite_ideal : NotNotSpecUU.
+    exists (λ x, isfinite x -> ∅).
+    split; try split.
+    - unfold isCoprodUniverse, isfinite, finstruct, nelstruct.
+      intros x y xinf yinf xyfinite.
+      Abort.
+  
+  
+      
+    
+
+    
+
+
+    Example finiteSetsIdeal : SpecUU :=
+      
+         
+    
+    
+    End SubUniverse.
   
   Section PreBricolageOnAMonoid.
     Require Import UniMath.Algebra.Monoids.

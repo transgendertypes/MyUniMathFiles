@@ -1,0 +1,414 @@
+Require Import UniMath.Foundations.All.
+Require Import UniMath.MoreFoundations.All.
+
+(* There are more than one way to define a universe *)
+(* A universe is a family of types. *)
+Definition tarski_universe : UU :=
+  ∑ X : UU, X → UU.
+Definition tarski_universe_over (X : UU) := (X → UU).
+(* This version is often what one has in mind, but the former is useful! *) 
+Definition Tarski_universe : UU :=
+  ∑ X : hSet, X → UU.
+
+(* A universe isa property of types *) 
+Definition property_universe : UU := UU → hProp.
+(* A universe isa decidable property of types *) 
+Definition decidable_universe : UU := UU → bool.
+(* A universe is a mapping from types to pointed types *)
+(* The "point" indicates that the type is not in the universe *)
+(* For instance, UU → Nat is like a "multiset" of types*)
+(* Geometrically, the nonzero elements of the classifying type classifies incidences *)
+Definition classifying_universe : UU :=
+  ∑ X : UU, ∑ zero : X, UU → X.
+Definition pointed : UU := ∑ X : UU, X.
+Notation "UU*" := pointed.
+Definition pointed_to_UU : UU* → UU := pr1.
+Coercion pointed_to_UU : pointed >-> UU.
+Definition base (X : pointed) : X := pr2 X.
+Coercion base : pointed >-> pointed_to_UU.
+
+(* This redefinition is fun, don't you agree? *)
+Definition basepoint ( X : UU* ) : X := X.
+
+Definition classifying_universe_over (X : UU*) := UU → X.
+
+Definition unital_classifying_universe : UU :=
+  ∑ 𝔘 : classifying_universe ,
+      ∏ x : (pr1 𝔘), x = x.
+
+Definition hypertarski : UU := UU → UU.
+
+Definition UU_with_basepoint : UU*.
+  exists UU. exact ∅.
+Defined.
+Notation "UU∅" := UU_with_basepoint.
+
+(* The main definition *)
+Inductive Universe : UU :=
+| tarski     (X : UU) : tarski_universe_over X → Universe
+| propertied (X : UU*) : classifying_universe_over X → Universe.
+Axiom wedge : tarski UU = propertied UU∅.
+(* The idea isthat Universe isthe wedge sum of the two notions of universe *)
+
+Definition Universe_decomposition : Universe → tarski_universe ⨿ classifying_universe.
+  intro.
+  induction X.
+  left; exists X; exact t.
+  right; exists X. exists X. exact c.
+Defined.
+
+Definition Universal := UU → UU.
+(* \mbfU *)
+Section Points.
+Context (𝐔 : Universal).
+(* tarski points *)
+Definition tpoints : UU :=
+  ∑ x : UU, ishinh (∑ y : UU, 𝐔 y = x).
+(* incident points *)
+Definition ipoints : UU :=
+  ∑ x : UU, ishinh ( 𝐔 x ).
+
+(* Represents a "tarski" universe as an "incidence" universe *)
+(* The "multiplicity" in tarski universes "counts" the redundancies*)
+(* The "redundancy" is "dualized" into an incidence. *)
+Definition dualize (tarski : Universal) : Universal.
+  exact (λ X, ∑ y : UU, tarski y = X).
+Defined.
+Definition antidualize : Universal → Universal.
+  intros.
+  exact (λ x, ∑ y : UU, X x = y).
+Defined.
+
+Definition encode {X : UU} : X → UU.
+  intro.
+  exact ((X,, X0) = (X,, X0)).
+Defined.
+
+Definition codualize (incidence : Universal) : Universal.
+  intro x.
+  exact (∑ y : incidence x, encode y = x).
+  Defined.
+End Points.
+(* ◒ \circlebottomhalfblack *)
+(* ◓ \circletophalfblack *)
+Notation "◒" := dualize (at level 300). 
+Notation "◓" := codualize (at level 300). 
+
+Section incidence.
+Context (𝐔 : Universal).
+Definition ipoint : ipoints 𝐔 → UU.
+  exact pr1.
+Defined.
+Definition imultiplicity : ipoints 𝐔 → UU.
+  intro.
+  exact (𝐔 (pr1 X)).
+Defined.
+
+Definition tpoint : tpoints 𝐔 → UU.
+  exact pr1.
+Defined
+.
+Definition tmultiplicity : tpoints 𝐔 → UU.
+  unfold tpoints.
+  intro. induction X as [X _].
+  exact (∑ y : UU, 𝐔 y = X).
+Defined.
+
+Definition iincidence : ipoints 𝐔 → UU.
+  intro.
+  exact (ipoint X × imultiplicity X).
+Defined.
+Definition tincidence : tpoints 𝐔 → UU.
+  intro.
+  exact (tpoint X × tmultiplicity X).
+Defined.
+
+End incidence.
+
+Section incidences.
+  Context (𝐔 : Universal).
+Definition iincidences := total2 (iincidence 𝐔).
+Definition tincidences := total2 (tincidence 𝐔).
+End incidences.
+
+Theorem iintot_incidences {x : Universal} : tincidences x = iincidences (◒ x).
+  unfold tincidences, iincidences, dualize. unfold iincidence, tincidence.
+  unfold tpoints, tpoint, tmultiplicity, ipoints, ipoint, imultiplicity.
+  apply idpath.
+Defined.
+Theorem tintoi_adj {x : Universal} : tincidences x → iincidences (◒ x).
+  rewrite iintot_incidences. apply idfun.
+Defined.
+Theorem iintot_adj_co {x : Universal} : iincidences x → tincidences (◓ x).
+  rewrite iintot_incidences. unfold "◓", "◒".
+  simpl. unfold iincidences, encode.
+  unfold iincidence.
+  unfold ipoints, ipoint, imultiplicity.
+  intro.
+  induction X.
+  induction pr1.
+  simpl in pr2.
+  induction pr2.
+  simpl.
+  unfold ishinh_UU.
+  simpl.
+  refine ((_,, _),, _).
+  simpl.
+  split.
+  Focus 2.
+  exists pr1.
+  Unshelve.
+  Focus 2.
+  exact (∑ y : x pr1, (encode y) = pr1).
+  apply idpath.
+  intro.
+  intro.
+  apply X.
+  exists (pr1).
+  apply idpath.
+  Abort.
+(* INTRO really don'trivial have the right definitions*)
+Theorem iintot_adj {x : Universal} : iincidences x → tincidences (antidualize x).
+  unfold iincidences, tincidences, antidualize.
+  unfold tincidence, iincidence, tpoints, tpoint, ipoints, ipoint.
+  simpl.
+  unfold ishinh_UU, tmultiplicity, imultiplicity.
+  intro.
+  induction X.
+  induction pr1.
+  simpl.
+  induction pr2.
+  simpl in pr2, pr3.
+  refine (((∑ y :
+
+ UU, x pr1 = y),, _ ),, _).
+  simpl.
+  split.
+  Unshelve.
+  Focus 2.
+  exists pr1.
+  Unshelve.
+  Focus 1.
+  apply idpath.
+  exists (x pr1).
+  apply idpath.
+  intro.
+  intro.
+  apply pr0.
+  intro.
+  apply X.
+  exists pr1.
+  apply idpath.
+Defined.
+
+Notation "I ♯" := (iintot_adj I) (at level 300).
+Notation "T ♭" := (tintoi_adj T) (at level 300).
+(*
+Theorem tintoi_anti_incidences {x : Universal} : iincidences x <- tincidences x.
+  unfold iincidences, tincidences, "◓".
+  unfold tincidence, iincidence, tpoints, tpoint, ipoints, ipoint.
+  simpl.
+  unfold ishinh_UU, tmultiplicity, imultiplicity.
+  intro.
+  induction X.
+  induction pr1.
+  simpl in pr2, pr0.
+  induction pr2.
+  induction pr3.
+  rewrite <- pr4 in pr2.
+  induction pr2.
+  remember (pr2,, pr5).
+  rewrite pr4 in t.
+  rewrite pr4 in pr2.
+  refine ((pr1,, _),, _).
+  split.
+  simpl.
+  assumption.
+  simpl.
+  Unshelve. Focus 2.
+  simpl.
+*)
+
+Theorem tintoi_points {x : Universal} : tpoints x = ipoints (◒ x).
+  unfold tpoints, ipoints, dualize. apply idpath.
+Defined.
+Theorem tintoi_point {x : Universal} : tpoint x = ipoint (◒ x).
+  apply idpath.
+Defined.
+
+Theorem iintot_incidence {x : Universal} : tincidence x = iincidence (◒ x).
+  apply idpath.
+Defined.
+
+Definition incidences0 := iincidences.
+Definition incidences1 := tincidences.
+Fixpoint incidences (n : nat) : Universal → UU.
+  induction n.
+  - exact iincidences.
+  - exact (incidences n ∘ ◒). 
+Defined.
+
+Theorem incidence_levels_lower : ∏ n : nat,
+          ∏ UtoU : Universal, 
+      ∑ lowered : Universal, incidences n lowered = incidences (S n) UtoU .
+  intros.
+  exists (◒ UtoU).
+  apply idpath.
+Defined.
+Fixpoint incidence_levels_flatten ( n : nat) : ∏ UtoU : Universal,
+       ∑ flattened : Universal, incidences 0 flattened = incidences n UtoU .
+  intros.
+  induction n.
+  exists UtoU. apply idpath.
+  remember (incidence_levels_lower n UtoU).
+  induction t as[lowered equals].
+  rewrite <- equals.
+  exact (incidence_levels_flatten _ _).
+Defined.
+  
+Section makers.
+Context {𝐔 : Universal}.
+Definition make_ipoints {X : UU} (y : 𝐔 X) : ipoints 𝐔.
+  unfold ipoints.
+
+  exists X. intro. intro. apply X0.
+  exact y.
+Defined.
+
+Definition make_tpoints (Y : UU) : tpoints 𝐔.
+  refine (𝐔 Y,, _).
+  unfold ishinh.
+  simpl.
+  unfold ishinh_UU.
+  intros.
+  apply X.
+  exists Y.
+  apply idpath.
+Defined.
+
+Definition make_iincidence {X : UU} (x : X) (y : 𝐔 X) : iincidence 𝐔 (make_ipoints y).
+  split. exact x.
+  unfold imultiplicity, make_ipoints.
+  exact y.
+Defined.
+Definition make_tincidence {X : UU} (x : X) (y : 𝐔 X) : tincidence 𝐔 (make_tpoints X).
+  split. exact y.
+  exists X.
+  apply idpath.
+Defined.
+
+End makers.
+  
+                             
+
+
+(* Axiom axiom_of_contractible_zero : (∅ = ∅) = unit. *)
+Axiom axiom_of_universal_zero : (∅ = ∅) = UU.
+(* of course, these two axioms are not well founded if we accept both. *)
+
+Example constant0 : Universal := λ X, ∅.
+(* The tarski perspective: constant0 isa (projetive?) universe with one "line",
+the empty type, of multiplicity UU. *)
+(* The incidence perspective: constant0 is a (affine?) universe with no "points"*)
+Theorem whatijustsaid0 :
+  ((tmultiplicity constant0 (make_tpoints ∅)) = (UU × (∅ = ∅)))
+                                                 × (UU → tpoints constant0)
+× ipoints constant0 = ∅.
+  split.
+  - unfold tmultiplicity, constant0, make_tpoints.
+    apply idpath.
+  - split.
+    + unfold tpoints, constant0.
+      exists ∅. unfold ishinh, ishinh_UU. simpl.
+      intro. intro. apply X0.
+      exists X. apply idpath.
+    + unfold ipoints.
+      unfold constant0.
+      apply univalence.
+      unfold ishinh, ishinh_UU. simpl.
+      apply weqtoempty.
+      intro.
+      induction X.
+    pose proof (pr2 hfalse).
+    apply X.
+    intro.
+    inversion X0.
+  Defined.
+    
+
+(* The tarski perspective: constant1 isa (projective?) universe with one "line",
+the unit type, of multiplicity UU. *)
+(* The incidence perspective: constant1 is a curve passing through each type once*)
+(* We can think of this as a curve without self intersection or "holes". *)
+Example constant1 : Universal := λ X, unit.
+
+Theorem whatijustsaid1 :
+  ((tmultiplicity constant1 (make_tpoints unit)) = (UU × (unit = unit)))
+                                                 × (UU → tpoints constant1)
+× ipoints constant1 = UU × ∏ x : UU, imultiplicity constant1 (make_ipoints (tt : constant1 x))  = unit.
+  split; try split.
+  - intro. unfold tpoints, constant1. exists unit. unfold ishinh,ishinh_UU.
+    simpl. intro. intro. apply X0.
+    exists X. apply idpath.
+  - split.
+    + unfold ipoints, constant1.
+      apply univalence.
+      apply Equivalence_to_weq.
+      unfold ishinh, ishinh_UU.
+      simpl.
+      exists pr1. unfold isEquivalence. exists (λ x, (x,, λ pp, λ fnc, fnc tt)).
+      simpl. exists idpath.
+      simpl. unfold maponpaths. unfold paths_rect.  simpl.
+      refine (pr1 _,, _).
+      ++ intro.  
+         Unshelve.
+         Focus 2.
+         intro.
+         exact unit.
+         Unshelve. Focus 2.
+         refine (_,, tt).
+         intro.
+         induction x.
+         simpl.
+         apply total2_paths2.
+         apply idpath.
+         simpl.
+         apply funextsec.
+         unfold homot.
+         intro.
+         apply funextfun.
+         unfold homot. intro.
+         apply x.
+         +++ simpl.
+             induction (paths_rect (∏ P : hProp, (unit → P) → P)
+      (λ (pp : hProp) (fnc : unit → pp), fnc tt)
+      (λ (b2 : ∏ P : hProp, (unit → P) → P)
+       (_ : (λ (pp : hProp) (fnc : unit → pp), fnc tt) = b2),
+       pr1 x,, (λ (pp : hProp) (fnc : unit → pp), fnc tt) = pr1 x,, b2)
+      (idpath (pr1 x,, (λ (pp : hProp) (fnc : unit → pp), fnc tt))) 
+      (pr2 x)
+      (funextsec (λ t : hProp, (unit → t) → t)
+         (λ (pp : hProp) (fnc : unit → pp), fnc tt) (pr2 x)
+         (λ x0 : hProp,
+          funextfun (λ fnc : unit → x0, fnc tt) (pr2 x x0)
+            (λ x1 : unit → x0, pr1 (pr2 x0 (x1 tt) (pr2 x x0 x1)))))).
+             simpl.
+             unfold paths_rect.
+             induction x.
+             unfold funextsec.
+             unfold funextfun.
+             simpl.
+             unfold funextsecImplication.
+             unfold isweqtoforallpaths.
+             simpl.
+             unfold invmap, make_weq.
+             simpl.
+             unfold hfiberpr1.
+             unfold weqccontrhfiber.
+             simpl.
+             unfold iscontrpr1.
+             unfold Preamble.pr1.
+             induction 
+         
+      exists ((λ x, unit,, λ PP, λ fnc, fnc PP)).
+      

@@ -1,0 +1,12 @@
+Require Import UniMath.Foundations.All.
+
+Definition goldenTypes : UU :=
+  Σ X : UU, ∃! x : X, (x = x) = X.
+
+Definition unitalTypes : UU :=
+  Σ X : UU, ∏ x y : X, x = y.
+Definition unitalType_to_type : unitalType → UU := pr1.
+Coercion unitalType_to_type : unitalTypes >-> UU.
+
+Definition goldenRatio : UU :=
+  Σ ϕ : UU, ∃! ϕ_minus_1 : unitalTypes, 

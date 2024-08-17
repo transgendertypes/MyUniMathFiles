@@ -1,0 +1,13 @@
+Require Import UniMath.Foundations.All.
+Require Import UniMath.MoreFoundations.All.
+
+Definition op2 (X : UU) := X → X → X.
+Definition commutes {X : UU} (op : op2 X) : UU :=
+  ∏ x y : X, op x y = op y x.
+
+Inductive Additive : UU :=
+| the : UU → Additive
+| adding : op2 Additive
+| multiplying : op2 Additive
+| adding_commutes : ∏ x y : Additive, adding x y = adding y x
+.
